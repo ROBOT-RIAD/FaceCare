@@ -1,0 +1,109 @@
+version: "3.9"
+
+
+services:
+  db:
+     image: postgres:16
+     container_name: backend_db
+     restart: always
+     env_file:
+       - .env
+     environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+     volumes:
+      - backend_postgres_data:/var/lib/postgresql/data
+     healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+      start_period: 10s
+     networks:
+      - backend_network
+
+  redis:
+      image: redis:7
+      container_name: backend_redis
+      restart: unless-stopped
+      volumes:
+       - backend_redis_data:/data
+      healthcheck:
+       test: ["CMD", "redis-cli", "ping"]
+       interval: 10s
+       retries: 5
+      networks:
+       - backend_network
+       
+  web:
+    build: .
+    container_name: backend
+    restart: unless-stopped
+    command: >
+      sh -c "
+      python manage.py migrate &&
+      python manage.py collectstatic --noinput &&
+      daphne -b 0.0.0.0 -p 8000 backend.asgi:application
+      "
+    env_file:
+      - .env
+
+    volumes:
+      - .:/app
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
+
+    ports:
+      - "8000:8000"
+
+    networks:
+      - backend_network
+
+  celery:
+    build: .
+    container_name: backend_celery
+    restart: unless-stopped
+    command: celery -A backend worker -l info --concurrency=4
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    networks:
+      - backend_network
+
+  
+  celery-beat:
+    build: .
+    container_name: backend_celery_beat
+    restart: unless-stopped
+    command: celery -A backend beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    networks:
+      - backend_network
+
+
+
+networks:
+  backend_network:
+    driver: bridge
+
+
+volumes:
+  backend_postgres_data:
+  backend_redis_data:
+  static_volume:
+  media_volume:
