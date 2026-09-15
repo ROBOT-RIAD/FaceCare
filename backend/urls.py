@@ -24,7 +24,7 @@ from drf_yasg import openapi
 from rest_framework import permissions
 
 def home(request):
-    return HttpResponse("Welcome to Backend upload platform")
+    return HttpResponse("Welcome to Backend platform")
 
 
 schema_view = get_schema_view(
@@ -44,6 +44,7 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('', home, name='home'),
     path('admin/', admin.site.urls),
+    path("api/v1/",include("account.urls")),
 
 
 

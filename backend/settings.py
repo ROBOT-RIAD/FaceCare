@@ -14,6 +14,7 @@ from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+import cloudinary
 from celery.schedules import crontab
 load_dotenv()
 
@@ -28,7 +29,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
+
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.MD5PasswordHasher',
+]
 
 
 
@@ -142,6 +147,8 @@ MAILERS = {
 
 ##############################################################################################################################
 
+AUTH_USER_MODEL = "account.User"
+
 WSGI_APPLICATION = 'backend.wsgi.application'
 ASGI_APPLICATION = "backend.asgi.application"
 
@@ -166,6 +173,7 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD'),
         'HOST': os.getenv('DB_HOST'),
         'PORT': os.getenv('DB_PORT'),
+        "CONN_MAX_AGE": 0,
     }
 }
 
@@ -201,6 +209,11 @@ REST_FRAMEWORK = {
             'rest_framework.parsers.FormParser',
             'rest_framework.parsers.MultiPartParser', 
         ),
+
+    # Throttling
+    # "DEFAULT_THROTTLE_RATES": {
+    #     "register": "5/min",
+    # },
 }
 
 
@@ -266,6 +279,14 @@ SWAGGER_SETTINGS = {
     'SHOW_REQUEST_HEADERS': True,
     'VALIDATOR_URL': None,
 }
+
+
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True,
+)
 
 
 
