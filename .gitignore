@@ -103,6 +103,7 @@ coverage.xml
 
 # Ignore secrets if present
 secrets.json
+load_tests/load_test_users.json
 
 # End of .gitignore
 

@@ -10,7 +10,7 @@ from backend.response import success_response
 
 
 from .models import Profile,User
-from .serializers import RegisterSerializer,AuthResponseSerializer
+from .serializers import RegisterSerializer,AuthResponseSerializer,LoginSerializer,ProfileSerializer
 
 #jwt
 from rest_framework_simplejwt.tokens import RefreshToken,TokenError
@@ -79,6 +79,79 @@ class RegisterView(APIView):
         return response
 
 
+
+class LoginAPIView(TokenObtainPairView):
+    permission_classes = [AllowAny]
+    serializer_class = LoginSerializer
+    parser_classes = [MultiPartParser, FormParser]
+
+    @swagger_auto_schema(
+        operation_summary="Login API",
+        operation_description="Login with email and password and return JWT tokens.",
+        request_body=LoginSerializer,
+        tags=["Authentication"],
+        responses={200: AuthResponseSerializer}
+    )
+    def post(self, request, *args, **kwargs):
+        serializer = LoginSerializer(
+            data=request.data,
+            context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        access_token = data["access"]
+        refresh_token = data["refresh"]
+        auth_data = {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+        }
+        response_serializer = AuthResponseSerializer(auth_data)
+        response = success_response(
+            message="Login successful.",
+            data=response_serializer.data,
+            status_code=status.HTTP_200_OK
+        )
+
+        response.set_cookie(
+            key=settings.JWT_ACCESS_COOKIE_NAME,
+            value=access_token,
+            max_age=settings.JWT_ACCESS_COOKIE_MAX_AGE,
+            httponly=settings.JWT_COOKIE_HTTP_ONLY,
+            secure=settings.JWT_COOKIE_SECURE,
+            samesite=settings.JWT_COOKIE_SAMESITE,
+        )
+
+        response.set_cookie(
+            key=settings.JWT_REFRESH_COOKIE_NAME,
+            value=refresh_token,
+            max_age=settings.JWT_REFRESH_COOKIE_MAX_AGE,
+            httponly=settings.JWT_COOKIE_HTTP_ONLY,
+            secure=settings.JWT_COOKIE_SECURE,
+            samesite=settings.JWT_COOKIE_SAMESITE,
+        )
+
+        return response
+
+
+
+
+class ProfileApiview(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="Get User Profile",
+        operation_description="Retrieve the profile of the authenticated user.",
+        tags=["Profile"],
+        responses={200: openapi.Response('User Profile', ProfileSerializer)}
+    )
+    def get(self, request, *args, **kwargs):
+        profile = Profile.objects.select_related("user").get(user=request.user)
+        serializer = ProfileSerializer(profile)
+        return success_response(
+            message="Profile retrieved successfully.",
+            data=serializer.data,
+            status_code=status.HTTP_200_OK
+        )
 
 
 

@@ -3,6 +3,12 @@ from account.models import User,Profile
 from datetime import date
 from backend.services import upload_image_to_cloudinary
 from django.db import transaction
+from django.contrib.auth.models import update_last_login
+
+
+#jwt 
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from secrets import token_urlsafe
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -122,6 +128,59 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 
+
 class AuthResponseSerializer(serializers.Serializer):
     access_token = serializers.CharField()
     refresh_token = serializers.CharField()
+
+
+
+class LoginSerializer(TokenObtainPairSerializer):
+    email = serializers.EmailField()
+
+    class Meta:
+        model = User
+        fields = ['email' , 'password']
+
+    def validate(self, attrs):
+        email = attrs.get("email")
+        password = attrs.get("password")
+
+        try:
+            user = User.objects.get(email = email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError({"email": "Invalid email address."})
+        
+        if not user.check_password(password):
+            raise serializers.ValidationError({"password": "Invalid Password"})
+
+        data = super().validate({'email': user.email, 'password': password})
+
+        update_last_login(None, user)
+        # profile = Profile.objects.get(user =user)
+
+        data['user'] = user
+
+        return data
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        # Add custom claims
+        token['id'] = user.id
+        token['role'] = user.role
+        return token
+
+
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email',read_only = True)
+    role = serializers.CharField(source ='user.role', read_only = True)
+
+    class Meta:
+        model = Profile
+        fields = ["id","user",'email','role','full_name','image','gender',"contact_number","skin_type",'date_of_birth',"created_at","updated_at"]
+        read_only_fields = ["user",'email', 'role',"created_at","updated_at"]
+
+
+
