@@ -17,9 +17,9 @@ class PublicApiUser(HttpUser):
     def register(self):
         register_load(self)
 
-    @task
-    def login(self):
-        login_load(self)
+    # @task
+    # def login(self):
+    #     login_load(self)
 
 
 
@@ -27,12 +27,12 @@ class UserApiUser(HttpUser):
     """Load tests for authenticated user endpoints."""
 
     wait_time = between(1, 3)
-    def on_start(self):
-        self.access_token = login_load(self)
+    # def on_start(self):
+    #     self.access_token = login_load(self)
 
-    @task
-    def profile(self):
-        profile_load(self)
+    # @task
+    # def profile(self):
+    #     profile_load(self)
 
     def auth_headers(self):
         if not self.access_token:
@@ -44,8 +44,8 @@ class AdminApiUser(HttpUser):
     """Add authenticated admin API tasks here when those endpoints exist."""
     wait_time = between(1, 3)
 
-    def on_start(self):
-            self.access_token = login_load(self)
+    # def on_start(self):
+    #         self.access_token = login_load(self)
 
     def auth_headers(self):
             if not self.access_token:

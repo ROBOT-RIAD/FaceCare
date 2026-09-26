@@ -28,7 +28,6 @@ class UserAdmin(BaseUserAdmin):
             {
                 "fields": (
                     "role",
-                    "account_status",
                 )
             },
         ),
@@ -53,11 +52,6 @@ class UserAdmin(BaseUserAdmin):
                 )
             },
         ),
-    )
-    add_fieldsets = BaseUserAdmin.add_fieldsets + (
-    ("Custom Fields", {
-        "fields": ("role", "account_status")
-    }),
     )
 
 

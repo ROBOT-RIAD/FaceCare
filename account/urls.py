@@ -1,5 +1,7 @@
 from django.urls import path
 from .views import CookieTokenRefreshView, LogoutView, ProfileUpdateView, RegisterView,LoginAPIView,ProfileApiview, ResetPasswordView, SendOTPView, TokenRefresView, VerifyOTPView
+from category.views import CategoryListView,CategoryRetriveApi
+
 
 
 urlpatterns = [
@@ -24,5 +26,10 @@ urlpatterns = [
     #profileUrl
     path("profile/",ProfileApiview.as_view(),name='profile'),
     path("profile/update/",ProfileUpdateView.as_view(),name="profile-update",),
+
+
+    #category
+    path("category/",CategoryListView.as_view(),name='category-list'),
+    path("category/<int:pk>/",CategoryRetriveApi.as_view(),name='category-retrive'),
     
 ]

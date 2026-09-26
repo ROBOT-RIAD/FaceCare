@@ -41,10 +41,13 @@ schema_view = get_schema_view(
    authentication_classes=[],
 )
 
+
 urlpatterns = [
     path('', home, name='home'),
     path('admin/', admin.site.urls),
     path("api/v1/",include("account.urls")),
+    path("api/v1/admin/",include("adminapi.urls")),
+    path("api/v1/user/",include("userapi.urls")),
 
 
 
