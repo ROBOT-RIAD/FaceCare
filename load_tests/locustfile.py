@@ -4,7 +4,7 @@ from locust import HttpUser, between, task
 from load_tests.auth.login_load import login as login_load
 from load_tests.auth.register_load import register as register_load
 from load_tests.profile.profile_get_load import profile as profile_load
-
+from load_tests.category.category_get_load import get_all_category as get_all_category_load
 
 
 
@@ -16,6 +16,10 @@ class PublicApiUser(HttpUser):
     @task
     def register(self):
         register_load(self)
+
+    # @task
+    # def get_all_category(self):
+    #     get_all_category_load(self)
 
     # @task
     # def login(self):

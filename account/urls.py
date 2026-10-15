@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import CookieTokenRefreshView, LogoutView, ProfileUpdateView, RegisterView,LoginAPIView,ProfileApiview, ResetPasswordView, SendOTPView, TokenRefresView, VerifyOTPView
 from category.views import CategoryListView,CategoryRetriveApi
+from product.views import ProductListView
 
 
 
@@ -31,5 +32,9 @@ urlpatterns = [
     #category
     path("category/",CategoryListView.as_view(),name='category-list'),
     path("category/<int:pk>/",CategoryRetriveApi.as_view(),name='category-retrive'),
+
+
+    #product
+    path("product/",ProductListView.as_view(),name='product-list')
     
 ]

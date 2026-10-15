@@ -1,12 +1,14 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
 from backend.response import success_response
-from .models import Category
-from .serializers import CategoryCreateandUpdateserializer,Categorylistserializer
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser,FormParser
 from account.permissions import IsAdminRole,IsUserRole
 from rest_framework.permissions import  AllowAny
+from .models import Category
+from .serializers import CategoryCreateandUpdateserializer,Categorylistserializer
+
+
 
 
 # swagger 
@@ -43,7 +45,6 @@ class CategoryCreateView(APIView):
         
 
 class CategoryListView(APIView):
-    parser_classes = (MultiPartParser, FormParser)
     permission_classes = [AllowAny]
 
     @swagger_auto_schema(
