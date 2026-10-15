@@ -40,6 +40,9 @@ services:
     build: .
     restart: unless-stopped
     command: daphne -b 0.0.0.0 -p 8000 backend.asgi:application
+    depends_on:
+      redis:
+        condition: service_healthy
     env_file:
       - .env
     volumes:
@@ -69,6 +72,23 @@ services:
     container_name: backend_celery
     restart: unless-stopped
     command: celery -A backend worker -l info -Q email,image --concurrency=4
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    networks:
+      - backend_network
+
+  celery-notifications:
+    build: .
+    container_name: backend_celery_notifications
+    restart: unless-stopped
+    command: celery -A backend worker -l info -Q notifications --concurrency=2
     env_file:
       - .env
     depends_on:

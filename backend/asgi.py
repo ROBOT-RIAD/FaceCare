@@ -14,3 +14,22 @@ from django.core.asgi import get_asgi_application
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 
 application = get_asgi_application()
+
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.security.websocket import AllowedHostsOriginValidator
+from channel.middleware import JWTAuthMiddleware, ProtocolAcceptMiddleware
+from channel import routing   
+
+
+
+application = ProtocolTypeRouter({
+    "http": application,
+
+    "websocket": AllowedHostsOriginValidator(         # usually good to keep
+        JWTAuthMiddleware(                            # ← your JWT middleware
+            ProtocolAcceptMiddleware(                 # if you really need it
+                URLRouter(routing.websocket_urlpatterns)
+            )
+        ),
+    ),
+})

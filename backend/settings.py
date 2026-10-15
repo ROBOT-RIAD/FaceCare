@@ -65,6 +65,8 @@ INSTALLED_APPS = [
     'adminapi',
     'userapi',
     'product',
+    'notifications',
+    'channel',
 ]
 
 MIDDLEWARE = [
@@ -237,6 +239,21 @@ CACHES = {
         "LOCATION": "redis://redis:6379/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    },
+}
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [{
+                "address": "redis://redis:6379/2",
+                "socket_timeout": 10,
+                "socket_connect_timeout": 5,
+            }],
+            "capacity": 100,
+            "expiry": 60,
         },
     },
 }
