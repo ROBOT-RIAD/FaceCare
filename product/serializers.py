@@ -3,6 +3,7 @@ from .models import Product
 from category.models import Category
 from backend.services import upload_image_to_cloudinary
 from account.tasks import delete_cloudinary_image
+from notifications.tasks import create_notification_task
 
 
 
@@ -141,6 +142,19 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             cloudinary_public_id=cloudinary_public_id if cloudinary_public_id else None
         )
         product._state.fields_cache["category"] = category
+
+        create_notification_task.delay(
+            title="New Product Added",
+            body=f"A new product '{title}' has been added.",
+            data={
+                "product_id": product.id,
+                "product_title": product.title,
+                "product_sub_title": product.sub_title,
+                "product_description": product.description,
+                "product_image": product.image,
+            },
+            all_user_notification=True
+            )
         return product
 
 

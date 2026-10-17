@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser,FormParser
 from account.permissions import IsAdminRole,IsUserRole
 from rest_framework.permissions import  AllowAny
+from rest_framework.pagination import PageNumberPagination
 
 
 from .models import Product
@@ -50,6 +51,8 @@ class ProductCreateView(APIView):
 
 class ProductListView(APIView):
     permission_classes = [AllowAny]
+    pagination_class = PageNumberPagination
+
 
     @swagger_auto_schema(
         operation_summary="List all Product",
@@ -62,10 +65,38 @@ class ProductListView(APIView):
     )
     def get(self, request,*args, **kwargs):
         products = Product.objects.select_related("category").order_by("created_at")
-        serializer = Productserializer(products, many=True)
-        return success_response(data=serializer.data,message="Products list fetched successfully",status_code=status.HTTP_200_OK)
+        paginator = self.pagination_class()
+        paginator.page_size = 10
+        paginated_products = paginator.paginate_queryset(
+            products, request, view=self
+        )
+        serializer = Productserializer(paginated_products, many=True)
+        return success_response(data={
+                "count": paginator.page.paginator.count,
+                "next": paginator.get_next_link(),
+                "previous": paginator.get_previous_link(),
+                "results": serializer.data,
+            },message="Products list fetched successfully",status_code=status.HTTP_200_OK)
        
 
 
 
+
+class ProductRetriveApi(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_summary="Retrieve a Product by ID",
+        operation_description="Retrieve a specific Product by its ID.",
+        responses={
+            200: Productserializer,
+            401: 'Unauthorized',
+            404: 'Not Found',
+        },
+        tags=['Product']
+    )
+    def get(self, request, pk,*args, **kwargs):
+        product = Product.objects.select_related("category").get(pk=pk)
+        serializer = Productserializer(product)
+        return success_response(data=serializer.data,message="Product fetched successfully",status_code=status.HTTP_200_OK)
 
