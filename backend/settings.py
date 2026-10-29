@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # Third party
+    'corsheaders',
     "rest_framework",
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
@@ -67,10 +68,13 @@ INSTALLED_APPS = [
     'product',
     'notifications',
     'channel',
+    'order',
+    'payment',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -159,6 +163,13 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 ASGI_APPLICATION = "backend.asgi.application"
 
 ALLOWED_HOSTS = ["*"]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://sacred-renewing-dove.ngrok-free.app",
+]
+# CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 
 # Database
@@ -319,6 +330,14 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = os.getenv("EMAIL")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_PASSWORD")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
+STRIPE_SECRET_KEY=os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PUBLIC_KEY=os.getenv("STRIPE_PUBLIC_KEY")
+STRIPE_WEBHOOK_SECRET=os.getenv("STRIPE_WEBHOOK_SECRET")
+
+FRONTEND_SUCCESS_URL = os.getenv("FRONTEND_SUCCESS_URL")
+FRONTEND_CANCEL_URL = os.getenv("FRONTEND_CANCEL_URL")
 
 
 

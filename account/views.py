@@ -27,6 +27,7 @@ from drf_yasg import openapi
 # Create your views here.
 
 class RegisterView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser]
     # throttle_classes = [RegisterThrottle]

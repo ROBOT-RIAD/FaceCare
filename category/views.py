@@ -63,6 +63,7 @@ class CategoryListView(APIView):
 
 
 
+
 class CategoryRetriveApi(APIView):
     parser_classes = (MultiPartParser, FormParser)
     permission_classes = [AllowAny]

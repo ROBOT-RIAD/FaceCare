@@ -438,31 +438,23 @@ def custom_exception_handler(exc, context):
         # -----------------------------------------------------
         # PostgreSQL UNIQUE violation (23505)
         # -----------------------------------------------------
+
+        if isinstance(exc, DatabaseError):
+                        # ...
+                        error_type = exc.__class__.__name__
+        
+                        # ...
+                        return _error_response(
+                            error_type="DatabaseError",
+                            message=message,
+                            status_code=500,
+                        )
+        
         if sqlstate == "23505":
 
             # 1. Known constraints (highest priority)
-            known_messages = {
-                "account_user_email_key": "Email is already in use.",
-                "account_profile_user_id_key": "Profile already exists for this user.",
-                "account_profile_cloudinary_public_id_key": "This Cloudinary image is already associated with another profile.",
-            }
-
-            if constraint_name in known_messages:
-                return _error_response(
-                    error_type="ValidationError",
-                    message=known_messages[constraint_name],
-                    status_code=400,
-                )
-
-            # 2. Dynamic message based on column_name (most reliable fallback)
-            if column_name:
-                human_column = column_name.replace("_", " ").capitalize()
-                return _error_response(
-                    error_type="ValidationError",
-                    message=f"{human_column} already exists.",
-                    status_code=400,
-                )
-
+    
+           
             # 3. Dynamic message based on constraint_name (good fallback)
             if constraint_name:
                 # Try to extract meaningful name from constraint
@@ -578,8 +570,12 @@ def custom_exception_handler(exc, context):
     # 
     # 
 
-    if isinstance(exc, DatabaseError):
+    
+    # =========================================================
+    # 5. General Database Error
+    # =========================================================
 
+    if isinstance(exc, DatabaseError):
         view = context.get("view")
 
         logger.exception(
@@ -590,16 +586,16 @@ def custom_exception_handler(exc, context):
         error_type = exc.__class__.__name__
         error_message = str(exc).lower()
 
-        # -------------------------------------------------
-        # Specific OperationalError messages
-        # -------------------------------------------------
         if error_type == "OperationalError":
 
             if "too many clients" in error_message:
                 return _error_response(
                     error_type="DatabaseError",
-                    message="Database is currently overloaded. Please try again in a moment.",
-                    status_code=503,  # Service Unavailable
+                    message=(
+                        "Database is currently overloaded. "
+                        "Please try again in a moment."
+                    ),
+                    status_code=503,
                 )
 
             if "connection" in error_message and (
@@ -617,15 +613,41 @@ def custom_exception_handler(exc, context):
                 return _error_response(
                     error_type="DatabaseError",
                     message="Database connection timed out. Please try again.",
-                    status_code=504,  # Gateway Timeout
+                    status_code=504,
                 )
 
-            # Default for other OperationalError
             return _error_response(
                 error_type="DatabaseError",
                 message="Database service is temporarily unavailable.",
                 status_code=503,
             )
+
+        database_messages = {
+            "ProgrammingError": (
+                "A database operation could not be completed."
+            ),
+            "DataError": (
+                "Invalid data was provided for the database."
+            ),
+            "NotSupportedError": (
+                "This database operation is not supported."
+            ),
+            "InternalError": (
+                "An internal database error occurred."
+            ),
+        }
+
+        message = database_messages.get(
+            error_type,
+            "A database error occurred.",
+        )
+
+        return _error_response(
+            error_type="DatabaseError",
+            message=message,
+            status_code=500,
+        )
+
 
     # -------------------------------------------------
     # Other DatabaseError types

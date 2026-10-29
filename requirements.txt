@@ -27,6 +27,7 @@ cryptography==50.0.1
 daphne==4.2.3
 Django==6.0.8
 django-celery-beat==2.9.0
+django-cors-headers==4.9.0
 django-filter==26.1
 django-redis==7.0.0
 django-timezone-field==7.2.2
@@ -70,6 +71,7 @@ python-dotenv==1.2.3
 python-engineio==4.14.0
 python-socketio==5.16.4
 pytz==2026.3.post1
+
 PyYAML==6.0.3
 pyzmq==27.2.0
 redis==8.1.0
@@ -78,6 +80,7 @@ service-identity==26.1.0
 simple-websocket==1.1.0
 six==1.17.0
 sqlparse==0.6.0
+stripe==16.0.1
 Twisted==26.4.0
 txaio==26.6.1
 typing_extensions==4.16.0

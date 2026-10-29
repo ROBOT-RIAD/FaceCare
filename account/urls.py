@@ -2,6 +2,7 @@ from django.urls import path
 from .views import CookieTokenRefreshView, LogoutView, ProfileUpdateView, RegisterView,LoginAPIView,ProfileApiview, ResetPasswordView, SendOTPView, TokenRefresView, VerifyOTPView
 from category.views import CategoryListView,CategoryRetriveApi
 from product.views import ProductListView,ProductRetriveApi
+from order.views import StripeWebhookAPIView
 
 
 
@@ -36,6 +37,10 @@ urlpatterns = [
 
     #product
     path("product/",ProductListView.as_view(),name='product-list'),
-    path("product/<int:pk>/",ProductRetriveApi.as_view(),name='product-retrive')
+    path("product/<int:pk>/",ProductRetriveApi.as_view(),name='product-retrive'),
+
+
+    #web hook stripe
+    path("webhook/", StripeWebhookAPIView.as_view(),name="stripe-webhook"),
     
 ]
