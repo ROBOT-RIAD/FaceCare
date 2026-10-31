@@ -403,3 +403,47 @@ class Orderserializer(serializers.ModelSerializer):
         return PaymentSerializer(payment).data
 
 
+
+
+class AdminOrderStatusUpdateSerializer(serializers.Serializer):
+    order_status = serializers.ChoiceField(
+        choices=Order._meta.get_field("status").choices,
+        required=False,
+    )
+
+    payment_status = serializers.ChoiceField(
+        choices=Payment._meta.get_field("status").choices,
+        required=False,
+    )
+
+    def validate(self, attrs):
+        if not attrs:
+            raise serializers.ValidationError(
+                "Provide at least one status to update."
+            )
+
+        return attrs
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        if "order_status" in validated_data:
+            instance.status = validated_data["order_status"]
+            instance.save(update_fields=["status", "updated_at"])
+
+        if "payment_status" in validated_data:
+            try:
+                payment = Payment.objects.select_for_update().get(
+                    order=instance
+                )
+            except Payment.DoesNotExist:
+                raise serializers.ValidationError({
+                    "payment_status": (
+                        "Payment does not exist for this order."
+                    )
+                })
+
+            payment.status = validated_data["payment_status"]
+            payment.save(update_fields=["status", "updated_at"])
+
+        return instance
+

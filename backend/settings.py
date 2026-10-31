@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'channel',
     'order',
     'payment',
+    'skinintelligence',
 ]
 
 MIDDLEWARE = [

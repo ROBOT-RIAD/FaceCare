@@ -3,12 +3,13 @@ from rest_framework.views import APIView
 from backend.response import success_response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser,FormParser,JSONParser
-from account.permissions import IsUserRole
+from account.permissions import IsUserRole,IsAdminRole
 from .models import AddressUser,Order,OrderProduct,CheckoutAttempt
 from product.models import Product
 from payment.models import Payment
-from .serializers import AddressCreateSerializer,AddressSerializer,OrderCreateSerializer,OrderCheckoutSerializer,Orderserializer
+from .serializers import AddressCreateSerializer,AddressSerializer,OrderCreateSerializer,OrderCheckoutSerializer,Orderserializer,AdminOrderStatusUpdateSerializer
 from django.shortcuts import get_object_or_404
+from django.db.models import Prefetch
 
 import json
 import stripe
@@ -19,6 +20,7 @@ from django.utils import timezone
 from rest_framework.permissions import AllowAny
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
+from rest_framework.pagination import PageNumberPagination
 
 
 # swagger 
@@ -568,6 +570,373 @@ class CheckoutPaymentStatusAPIView(APIView):
         return success_response(
             message= "Payment status retrieved successfully.",
             data=data,
+            status_code=status.HTTP_200_OK,
+        )
+
+
+
+class UserOrdersAPIView(APIView):
+    permission_classes = [IsUserRole]
+    pagination_class = PageNumberPagination
+    @swagger_auto_schema(
+        operation_summary="Get My Orders",
+        operation_description=(
+            "Retrieve all orders belonging to the authenticated user "
+            "with related products, payment, address, and user details."
+        ),
+        responses={
+            200: openapi.Response(
+                description="User orders retrieved successfully.",
+                schema=Orderserializer(many=True),
+            ),
+            401: openapi.Response(
+                description="Authentication required."
+            ),
+            403: openapi.Response(
+                description="Permission denied."
+            ),
+        },
+        tags=["Order"],
+    )
+    def get(self, request):
+        orders = (
+            Order.objects
+            .filter(user=request.user)
+            .select_related(
+                "user",
+                "user__profile",
+                "address",
+                "payment",
+            )
+            .prefetch_related(
+                Prefetch(
+                    "order_products",
+                    queryset=OrderProduct.objects.select_related(
+                        "product"
+                    ),
+                )
+            )
+            .order_by("-created_at")
+        )
+        paginator = self.pagination_class()
+        paginator.page_size = 10
+
+        paginated_order = paginator.paginate_queryset(
+                    orders, request, view=self
+                )
+
+
+        serializer = Orderserializer(
+            paginated_order,
+            many=True,
+            context={"request": request},
+        )
+
+        return success_response(
+            success=True,
+            message="Orders retrieved successfully.",
+            data={
+                "count": paginator.page.paginator.count,
+                "next": paginator.get_next_link(),
+                "previous": paginator.get_previous_link(),
+                "results": serializer.data,
+            },
+            status_code=status.HTTP_200_OK,
+        )
+
+
+
+class AdminAllOrdersAPIView(APIView):
+    permission_classes = [IsAdminRole]
+    pagination_class = PageNumberPagination
+
+    @swagger_auto_schema(
+        operation_summary="Get All Users Orders (Admin)",
+        operation_description=(
+            "Retrieve all orders from all users with related products, "
+            "payment, address, and user details. Admin access only."
+        ),
+        responses={
+            200: openapi.Response(
+                description="All user orders retrieved successfully.",
+                schema=Orderserializer(many=True),
+            ),
+            401: openapi.Response(
+                description="Authentication required."
+            ),
+            403: openapi.Response(
+                description="Permission denied."
+            ),
+        },
+        tags=["Order"],
+    )
+    def get(self, request):
+        orders = (
+            Order.objects
+            .select_related(
+                "user",
+                "user__profile",
+                "address",
+                "payment",
+            )
+            .prefetch_related(
+                Prefetch(
+                    "order_products",
+                    queryset=OrderProduct.objects.select_related(
+                        "product"
+                    ),
+                )
+            )
+            .order_by("-created_at")
+        )
+
+        paginator = self.pagination_class()
+        paginator.page_size = 10
+
+        paginated_orders = paginator.paginate_queryset(
+            orders, request, view=self
+        )
+
+        serializer = Orderserializer(
+            paginated_orders,
+            many=True,
+            context={"request": request},
+        )
+
+        return success_response(
+            success=True,
+            message="All users' orders retrieved successfully.",
+            data={
+                "count": paginator.page.paginator.count,
+                "next": paginator.get_next_link(),
+                "previous": paginator.get_previous_link(),
+                "results": serializer.data,
+            },
+            status_code=status.HTTP_200_OK,
+        )
+
+
+
+
+
+
+class UserOrderDetailAPIView(APIView):
+    permission_classes = [IsUserRole]
+
+    @swagger_auto_schema(
+        operation_summary="Get My Single Order",
+        operation_description=(
+            "Retrieve a single order belonging to the "
+            "authenticated user, including products, payment, "
+            "address, and user details."
+        ),
+        responses={
+            200: openapi.Response(
+                description="Order retrieved successfully.",
+                schema=Orderserializer(),
+            ),
+            401: openapi.Response(
+                description="Authentication required."
+            ),
+            403: openapi.Response(
+                description="Permission denied."
+            ),
+            404: openapi.Response(
+                description="Order not found."
+            ),
+        },
+        tags=["Order"],
+    )
+    def get(self, request, pk):
+        try:
+            order = (
+                Order.objects
+                .filter(user=request.user)
+                .select_related(
+                    "user",
+                    "user__profile",
+                    "address",
+                    "payment",
+                )
+                .prefetch_related(
+                    Prefetch(
+                        "order_products",
+                        queryset=OrderProduct.objects.select_related(
+                            "product"
+                        ),
+                    )
+                )
+                .get(pk=pk)
+            )
+
+        except Order.DoesNotExist:
+            return success_response(
+                success=False,
+                message="Order not found.",
+                data=None,
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = Orderserializer(
+            order,
+            context={"request": request},
+        )
+
+        return success_response(
+            success=True,
+            message="Order retrieved successfully.",
+            data=serializer.data,
+            status_code=status.HTTP_200_OK,
+        )
+
+
+
+
+
+class AdminOrderDetailUpdateAPIView(APIView):
+    permission_classes = [IsAdminRole]
+
+    @swagger_auto_schema(
+        operation_summary="Get Single Order (Admin)",
+        operation_description=(
+            "Retrieve any single order from all users, including "
+            "products, payment, address, and user details. "
+            "Admin access only."
+        ),
+        responses={
+            200: openapi.Response(
+                description="Order retrieved successfully.",
+                schema=Orderserializer(),
+            ),
+            401: openapi.Response(
+                description="Authentication required."
+            ),
+            403: openapi.Response(
+                description="Permission denied."
+            ),
+            404: openapi.Response(
+                description="Order not found."
+            ),
+        },
+        tags=["Order"],
+    )
+    def get(self, request, pk):
+        try:
+            order = (
+                Order.objects
+                .select_related(
+                    "user",
+                    "user__profile",
+                    "address",
+                    "payment",
+                )
+                .prefetch_related(
+                    Prefetch(
+                        "order_products",
+                        queryset=OrderProduct.objects.select_related(
+                            "product"
+                        ),
+                    )
+                )
+                .get(pk=pk)
+            )
+
+        except Order.DoesNotExist:
+            return success_response(
+                success=False,
+                message="Order not found.",
+                data=None,
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = Orderserializer(
+            order,
+            context={"request": request},
+        )
+
+        return success_response(
+            success=True,
+            message="Order retrieved successfully.",
+            data=serializer.data,
+            status_code=status.HTTP_200_OK,
+        )
+
+
+    @swagger_auto_schema(
+        operation_summary="Update Order and Payment Status (Admin)",
+        operation_description=(
+            "Admin can update only order_status and payment_status. "
+            "All other fields remain unchanged."
+        ),
+        request_body=AdminOrderStatusUpdateSerializer,
+        responses={
+            200: openapi.Response(
+                description="Order and payment status updated successfully.",
+                schema=Orderserializer(),
+            ),
+            400: openapi.Response(
+                description="Invalid status or request data."
+            ),
+            401: openapi.Response(
+                description="Authentication required."
+            ),
+            403: openapi.Response(
+                description="Admin permission required."
+            ),
+            404: openapi.Response(
+                description="Order not found."
+            ),
+        },
+        tags=["Order"],
+    )
+    def patch(self, request, pk):
+        try:
+            order = (
+                Order.objects
+                .select_related(
+                    "user",
+                    "user__profile",
+                    "address",
+                    "payment",
+                )
+                .prefetch_related(
+                    Prefetch(
+                        "order_products",
+                        queryset=OrderProduct.objects.select_related(
+                            "product"
+                        ),
+                    )
+                )
+                .get(pk=pk)
+            )
+        except Order.DoesNotExist:
+            return success_response(
+                success=False,
+                message="Order not found.",
+                data=None,
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = AdminOrderStatusUpdateSerializer(
+            order,
+            data=request.data,
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        # Reload payment data after update
+        order.refresh_from_db()
+
+        response_serializer = Orderserializer(
+            order,
+            context={"request": request},
+        )
+
+        return success_response(
+            success=True,
+            message="Order and payment status updated successfully.",
+            data=response_serializer.data,
             status_code=status.HTTP_200_OK,
         )
 

@@ -1,6 +1,7 @@
 from django.urls import path
 from category.views import CategoryCreateView,CategoryUpdateDeleteApi
 from product.views import ProductCreateView,ProductUpdateDeleteApi
+from order.views import AdminAllOrdersAPIView,AdminOrderDetailUpdateAPIView
 
 
 
@@ -13,6 +14,10 @@ urlpatterns = [
     #product
     path('product/',ProductCreateView.as_view(),name='product-create'),
     path('product/<int:pk>/',ProductUpdateDeleteApi.as_view(),name='product-update-delete'),
+
+    #order
+    path('order/',AdminAllOrdersAPIView.as_view(),name='all-admin-order'),
+    path("order/<int:pk>/",AdminOrderDetailUpdateAPIView.as_view(),name="update-get-order")
 
 
     
