@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     'order',
     'payment',
     'skinintelligence',
+    'chat',
 ]
 
 MIDDLEWARE = [

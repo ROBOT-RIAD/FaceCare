@@ -3,6 +3,7 @@ from .views import CookieTokenRefreshView, LogoutView, ProfileUpdateView, Regist
 from category.views import CategoryListView,CategoryRetriveApi
 from product.views import ProductListView,ProductRetriveApi
 from order.views import StripeWebhookAPIView
+from userapi.views import Userdata
 
 
 
@@ -28,6 +29,7 @@ urlpatterns = [
     #profileUrl
     path("profile/",ProfileApiview.as_view(),name='profile'),
     path("profile/update/",ProfileUpdateView.as_view(),name="profile-update",),
+    path("userdata/",Userdata.as_view(),name="user-data"),
 
 
     #category

@@ -163,3 +163,21 @@ class RoutineResponseSerializer(serializers.ModelSerializer):
         model = Routine
         fields = ["id","skin_intelligence_id","routine_json","is_saved","created_at","updated_at",]
 
+
+
+
+class RutineUpdateSrializer(serializers.ModelSerializer):
+    is_saved = serializers.BooleanField(required=True)
+
+    class Meta:
+        model = Routine
+        fields = ["is_saved"]
+
+    def update(self, instance, validated_data):
+        instance.is_saved = validated_data.get(
+            "is_saved",
+            instance.is_saved
+        )
+        instance.save(update_fields=["is_saved", "updated_at"])
+
+        return instance
