@@ -20,6 +20,28 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
+def debug_messages(messages):
+
+    print("\n========== TOKEN DEBUG ==========")
+
+    for index, message in enumerate(messages):
+
+        content = str(message.content)
+
+        print({
+            "index": index,
+            "role": message.type,
+            "characters": len(content),
+            "preview": content[:100],
+        })
+
+    total_chars = sum(
+        len(str(message.content))
+        for message in messages
+    )
+
+
+
 model = ChatGroq(
     model="qwen/qwen3.8-27b",
     temperature=0,
@@ -75,7 +97,7 @@ def build_chat_messages(
     previous_messages = (
         chat.messages
         .exclude(id=current_message_id)
-        .order_by("-created_at")[:12]
+        .order_by("-created_at")[:6]
     )
 
     previous_messages = list(reversed(previous_messages))
@@ -92,6 +114,15 @@ def build_chat_messages(
                 AIMessage(content=message.content)
             )
 
+    current_message = chat.messages.get(
+        id=current_message_id,
+        role="user",
+    )
+
+    messages.append(
+        HumanMessage(content=current_message.content)
+    )
+
     return messages
 
 
@@ -102,6 +133,7 @@ def stream_ai_response(user, chat, current_message_id):
         chat=chat,
         current_message_id=current_message_id,
     )
+    debug_messages(messages)
 
     for chunk in model.stream(messages):
 
