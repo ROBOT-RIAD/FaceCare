@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.db.models import Q
 from rest_framework.views import APIView
 from backend.response import success_response
 from rest_framework import status
@@ -64,7 +65,27 @@ class ProductListView(APIView):
         tags=['Product']
     )
     def get(self, request,*args, **kwargs):
+        category = request.query_params.get("category")
+        search = request.query_params.get("search")
+
         products = Product.objects.select_related("category").order_by("created_at")
+
+        if category and str(category).lower() not in ["all", "", "none"]:
+            if str(category).isdigit():
+                products = products.filter(category_id=int(category))
+            else:
+                products = products.filter(category__name__iexact=category)
+
+        if search and search.strip():
+            s = search.strip()
+            products = products.filter(
+                Q(title__icontains=s) |
+                Q(sub_title__icontains=s) |
+                Q(description__icontains=s) |
+                Q(key_benefits__icontains=s) |
+                Q(category__name__icontains=s)
+            )
+
         paginator = self.pagination_class()
         paginator.page_size = 10
         paginated_products = paginator.paginate_queryset(
